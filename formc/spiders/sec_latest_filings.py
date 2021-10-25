@@ -26,10 +26,11 @@ class SecLatestFilingsSpider(scrapy.Spider):
         link = response.xpath("//table/tr[2]/td[3]/a/@href").get()
         absolute_url = f'https://www.sec.gov{link}'
         
-        yield scrapy.Request(url=absolute_url, callback=self.parse_form_c, meta={'filing_date': filing_date})
+        yield scrapy.Request(url=absolute_url, callback=self.parse_form_c, meta={'filing_date': filing_date, 'url': absolute_url})
 
     def parse_form_c(self, response):
         filing_date = response.request.meta['filing_date']
+        form_c_url = response.request.meta['url']
 
         cik = response.xpath('//div[@class="content"]/table[@role="presentation"]/tr[1]/td[2]/div/text()').get()
         company_name = response.xpath('//td[text() = "Name of Issuer: "]/following::td[1]/div/text()').get()
@@ -40,10 +41,10 @@ class SecLatestFilingsSpider(scrapy.Spider):
         website = response.xpath('//td[text() = "Website of Issuer: "]/following::td[1]/div/text()').get()
         intermediary_name = response.xpath('//h4[text() = "Intermediary through which the Offering will be Conducted: "]/following::tr[2]/td[2]/div/text()').get()
         intermediary_cik = response.xpath('//h4[text() = "Intermediary through which the Offering will be Conducted: "]/following::tr[1]/td[2]/div/text()').get()
-        offering_type = response.xpath('//td[text() = "Specify: "]/following::td[1]/div/text()').get()
+        offering_type = response.xpath('//td[contains(text(), "Type of Security Offered")]/following::td[1]/div/text()').get()
         offering_target = response.xpath('//td[text() = "Target Offering Amount: "]/following::td[1]/div/text()').get()
-        offering_maximum = response.xpath('//td[text() = "Maximum Offering Amount (if different from Target Offering Amount): "]/following::td[1]/div/text()').get()
-        offering_deadline = response.xpath('//td[text() = "Deadline to reach the Target Offering Amount: "]/following::td[1]/div/text()').get()
+        offering_maximum = response.xpath('//td[contains(text(), "Maximum Offering Amount")]/following::td[1]/div/div/text()').get()
+        offering_deadline = response.xpath('//td[contains(text(), "Deadline to reach")]/following::td[1]/div/div/text()').get()
         signature_name = response.xpath('//td[text() = "Signature: "]/following::td[1]/div/text()').get()
         signature_title = response.xpath('//td[text() = "Title: "]/following::td[1]/div/text()').get()
 
@@ -64,5 +65,7 @@ class SecLatestFilingsSpider(scrapy.Spider):
             'offering_maximum': offering_maximum,
             'offering_deadline': offering_deadline,
             'signature_name': signature_name,
-            'signature_title': signature_title
+            'signature_title': signature_title,
+            'form_c_url': form_c_url,
+            'filing_date': filing_date
         }
